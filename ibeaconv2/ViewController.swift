@@ -115,9 +115,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         var tempData:String = ""
         for beacon in beaconSorted {
-            var i:UInt16 = 1
-            tempData.append("\(i),\(beacon.minor),\(beacon.rssi),\(beacon.accuracy)")
-            i += 1 //beacon index number
+            let formatted = String(format: "%.3f", Float(beacon.accuracy))
+            tempData.append("\(formatted)@")
         }
         distanceData = tempData
         
