@@ -100,17 +100,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didRangeBeacons beacons: [CLBeacon], in region: CLBeaconRegion) {
 //        guard let discoveredBeaconProximity = beacons.first?.proximity else {print("nothing"); return}
         
-        var z:Int = 0
         print("beacons : \(beacons)")
         beaconSorted = beacons
         
         //sorting
         for i in 0...beaconSorted.count-1 {
-            if (beaconSorted.count-1 != 0) {
-                z = i + 1
-            }
-            for j in z...beaconSorted.count-1 {
-                if (Int(truncating: beaconSorted[i].minor) > Int(truncating: beaconSorted[j].minor)) {
+            for j in 0...beaconSorted.count-1 {
+                if (Int(truncating: beaconSorted[i].minor) < Int(truncating: beaconSorted[j].minor)) {
                     let temp:CLBeacon = beaconSorted[i]
                     beaconSorted[i] = beaconSorted[j]
                     beaconSorted[j] = temp
@@ -125,15 +121,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         distanceData = tempData
         
-        print("sorted : \(beaconSorted)")
         print("data : \(distanceData)")
-        
-        
         let data = distanceData.data(using: String.Encoding.utf8)!
         if let iBeaconPeripheral = self.iBeaconPeripheral {
             iBeaconPeripheral.writeValue(data, for: iBeaconCharacteristic , type: CBCharacteristicWriteType.withoutResponse)
+        } else {
+            print("data send failed")
         }
-        self.tableView.reloadData()
+        self.tableView.reloadData() 
     }
 }
 
