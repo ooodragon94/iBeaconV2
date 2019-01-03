@@ -120,7 +120,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         var tempData:String = ""
         for beacon in beaconSorted {
             let formatted = String(format: "%d", beacon.rssi)
-            tempData.append("\(formatted)@")
+            
+            //don't send zero
+            if formatted != "0" {
+                tempData.append("\(formatted)@")
+            } else {
+                print("zero value detected")
+            }
         }
         distanceData = tempData
         
