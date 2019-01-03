@@ -47,28 +47,17 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     
     @IBAction func start(_ sender: Any) {
-        rangeBeacons()
-        
+        if uuid == nil {
+            self.alertUUID()
+        } else {
+            rangeBeacons()
+        }
         self.tableView.reloadData()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         
         self.tableView.reloadData()
-        
-        let alert = UIAlertController(title: "Enter UUID", message: nil, preferredStyle: .alert)
-        alert.addTextField { (textField) in
-            textField.placeholder = "UUID"
-            textField.keyboardType = .default
-            self.uuid = UUID(uuidString: textField.text!)
-        }
-        let action = UIAlertAction(title: "Add", style: .default) { (_) in
-            //first textfield input
-            let uuid = alert.textFields!.first!.text!
-            self.uuid = UUID(uuidString: uuid)
-        }
-        alert.addAction(action)
-        present(alert, animated: true, completion: nil)
         
     }
 
@@ -82,6 +71,21 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         
     }
     
+    func alertUUID () {
+        let alert = UIAlertController(title: "Enter UUID", message: nil, preferredStyle: .alert)
+        alert.addTextField { (textField) in
+            textField.placeholder = "UUID"
+            textField.keyboardType = .default
+            self.uuid = UUID(uuidString: textField.text!)
+        }
+        let action = UIAlertAction(title: "Add", style: .default) { (_) in
+            //first textfield input
+            let uuid = alert.textFields!.first!.text!
+            self.uuid = UUID(uuidString: uuid)
+        }
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
+    }
     
     func rangeBeacons() {
         if let uuid = self.uuid {
@@ -115,7 +119,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         var tempData:String = ""
         for beacon in beaconSorted {
-            let formatted = String(format: "%.3f", Float(beacon.accuracy))
+            let formatted = String(format: "%d", beacon.rssi)
             tempData.append("\(formatted)@")
         }
         distanceData = tempData
