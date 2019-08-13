@@ -9,6 +9,7 @@
 import UIKit
 import CoreLocation
 import CoreBluetooth
+import CoreMotion
 
 class ViewController: UIViewController, CLLocationManagerDelegate {
 
@@ -18,19 +19,20 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     var iBeaconPeripheral: CBPeripheral!
     var iBeaconCharacteristic: CBCharacteristic!
     var CBmanager:CBCentralManager!
-    
+    var motion = CMMotionManager()
     
     var distanceData:String = ""
     var beaconSorted:[CLBeacon] = []
+    var gyroData:[Double] = [0.0,0.0,0.0]
     var uuid = UUID(uuidString: "")
     var locationManager:CLLocationManager = CLLocationManager()
+    var sections = ["gyro",""]
     
     @IBOutlet weak var tableView: UITableView!
     @IBAction func pairAction(_ sender: Any) {
         print("pair button pressed")
         self.centralManager.scanForPeripherals(withServices: [serviceUUID])
-        func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
-                            advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
             print(peripheral)
             iBeaconPeripheral = peripheral
             self.centralManager.stopScan()
@@ -52,17 +54,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         } else {
             rangeBeacons()
         }
+        myGyro()
         self.tableView.reloadData()
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        
+        myGyro()
         self.tableView.reloadData()
         
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        myGyro()
         tableView.dataSource = self
         centralManager = CBCentralManager(delegate: self, queue: nil)
         locationManager.delegate = self
@@ -118,6 +122,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             }
         }
         var tempData:String = ""
+        for i in 0...gyroData.count-1 {
+            tempData.append("\(gyroData[i])#")
+        }
+        
         for beacon in beaconSorted {
             let formatted = String(format: "%d", beacon.rssi)
             
@@ -137,7 +145,26 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         } else {
             print("data send failed")
         }
+        myGyro()
         self.tableView.reloadData() 
+    }
+    func myGyro() {
+        motion.gyroUpdateInterval = 0.5
+        motion.startGyroUpdates(to: OperationQueue.current!) {
+            (gryodata, error) in print(gryodata as Any)
+            if let trueData = gryodata {
+                self.view.reloadInputViews()
+                var x = trueData.rotationRate.x
+                x = Double(round(1000*x)/1000)
+                var y = trueData.rotationRate.y
+                y = Double(round(1000*y)/1000)
+                var z = trueData.rotationRate.z
+                z = Double(round(1000*z)/1000)
+                self.gyroData[0]=x
+                self.gyroData[1]=y
+                self.gyroData[2]=z
+            }
+        }
     }
 }
 
@@ -151,7 +178,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
 extension ViewController: UITableViewDataSource {
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
+        return sections.count
     }
     
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -164,13 +191,24 @@ extension ViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return beaconSorted.count
+        if section == 0 { return 1 }
+        else if section == 1 { return beaconSorted.count }
+        else { return 0 }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-        cell.textLabel?.text = "Major: \(beaconSorted[indexPath.row].major) Minor: \(beaconSorted[indexPath.row].minor)"
-        cell.detailTextLabel?.text = "Rssi: \(beaconSorted[indexPath.row].rssi) distance: \(beaconSorted[indexPath.row].accuracy)"
+        
+        if indexPath.section == 0 {
+            cell.textLabel?.text = "X: \(gyroData[0]), Y: \(gyroData[1]), Z: \(gyroData[2])"
+        }
+        else if indexPath.section == 1 {
+            cell.textLabel?.text = "Major: \(beaconSorted[indexPath.row].major) Minor: \(beaconSorted[indexPath.row].minor)"
+            cell.detailTextLabel?.text = "Rssi: \(beaconSorted[indexPath.row].rssi) distance: \(beaconSorted[indexPath.row].accuracy)"
+        }
+        else {
+            return UITableViewCell()
+        }
         return cell
     }
 }
@@ -242,8 +280,7 @@ extension ViewController: CBPeripheralDelegate {
         
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService,
-                    error: Error?) {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard let characteristics = service.characteristics else { return }
         
         for characteristic in characteristics {
@@ -260,8 +297,7 @@ extension ViewController: CBPeripheralDelegate {
         }
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic,
-                    error: Error?) {
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         switch characteristic.uuid {
             
         case characteristicUUID:  //need to know our bluetooth characteristic uuid
