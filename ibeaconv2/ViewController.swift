@@ -149,9 +149,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         self.tableView.reloadData() 
     }
     func myGyro() {
-        motion.gyroUpdateInterval = 0.5
+        motion.gyroUpdateInterval = 1
         motion.startGyroUpdates(to: OperationQueue.current!) {
-            (gryodata, error) in print(gryodata as Any)
+            (gryodata, error) in self.tableView.reloadData() //calls this every gyroupdate
             if let trueData = gryodata {
                 self.view.reloadInputViews()
                 var x = trueData.rotationRate.x
@@ -182,12 +182,13 @@ extension ViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        
-        if let sectionName = uuid?.uuidString {
-            return sectionName
-        } else {
-        return nil
+        if section == 0 {
+            return sections[0]
         }
+        if section == 1 {
+            if let sectionName = uuid?.uuidString { return sectionName }
+        } else {return nil}
+        return nil
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
